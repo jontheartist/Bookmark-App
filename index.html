@@ -5,7 +5,7 @@
     <title></title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
 
     <style>
         body,
@@ -93,6 +93,7 @@
         .bookmark {
             display: block;
             background: #fff;
+            position: relative;
             color: #999;
             padding: 20px;
             transition: 0.3s ease all;
@@ -114,6 +115,36 @@
             border-bottom-left-radius: 5px;
             border-bottom-right-radius: 5px;
             border-bottom: 0;
+        }
+        
+        .bookmark .img {
+            background-color: #ddd;
+            border-radius: 3px;
+            background-image: url("https://pmcvariety.files.wordpress.com/2018/03/elon-musk.jpg?w=1000&h=562&crop=1");
+            background-size: cover;
+            background-position: top center;
+            width: 120px;
+            height: 60px;
+            margin-right: 20px;
+        }
+        
+        .bookmark .title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .bookmark .glyphicon-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: rgb(20, 8, 8);
+            font-size: 12px;
+            transition: 0.3s ease color;
+            cursor: pointer;
+        }
+        
+        .bookmark:hover .glyphicon-remove {
+            color: #aaa;
         }
     </style>
 </head>
@@ -150,7 +181,7 @@
         }
 
         input.addEventListener("focusin", showFloater);
-        input.addEventListener("focusout", closeFloater);
+        //  input.addEventListener("focusout", closeFloater);
         overlay.addEventListener("click", closeFloater);
 
         /* ===============================*/
@@ -161,24 +192,44 @@
         const bookmarkForm = document.querySelector(".bookmark-form");
         const bookmarkInput = bookmarkForm.querySelector("input[type=text]");
         const bookmarks = JSON.parse(localStorage.getItem("bookmarks")) || [];
+        const apiUrl = "http://opeeeeeengraph.io/api/1.0/site";
+        const appId = "4978bf39-01b9-44ef-ae1f-4c2748f8493f";
 
         fillBookmarksList(bookmarks);
 
         function createBookmark(e) {
             e.preventDefault();
 
+            if (!bookmarkInput.value) {
+                alert("We need info!");
+                return;
+            }
+
+            const url = encodeURIComponent(bookmarkInput.value);
+
             // Add a new bookmark to the bookmarks
-            const title = bookmarkInput.value;
-            const bookmark = {
-                title: title
-            };
+            //new javascript feature called fetch
+            fetch(`${apiUrl}/${url}?app_id=${appId}`)
+                //    fetch(apiUrl + "/" + url + "?app_id" + appId)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const bookmark = {
+                        title: data.hybridGraph.title,
+                        image: data.hybridGraph.image,
+                        link: data.hybridGraph.url
+                    };
+                    console.log(bookmark);
+                    bookmarks.push(bookmark);
+                    fillBookmarksList(bookmarks);
+                    storeBookmarks(bookmarks);
+                    bookmarkForm.reset();
+                })
+                .catch(error => {
+                    alert("There was a problem getting info!");
+                });
 
-            bookmarks.push(bookmark);
-            fillBookmarksList(bookmarks);
-            storeBookmarks(bookmarks);
-            bookmarkForm.reset();
-
-            console.table(bookmarks);
+            //    console.table(bookmarks);
             // save that bookmarks list to localStorage
 
             //  const title = bookmarkInput.value;
@@ -194,11 +245,12 @@
 
         function fillBookmarksList(bookmarks = []) {
             const bookmarksHtml = bookmarks
-                .map(bookmark => {
+                .map((bookmark, i) => {
                     return `
-      <a href='#' class="bookmark">
-      ${bookmark.title}
-
+      <a href='${bookmark.link}' class="bookmark" data-id="${i}">
+          <div class="img" style="background-image:url('${bookmark.image}')"></div>
+          <div class="title">${bookmark.title}</div>
+          <span class="glyphicon glyphicon-remove"></span>
       </a>
       `;
                 })
@@ -218,11 +270,34 @@
             //       console.log(bookmarksHtml);
         }
 
+        function removeBookmark(e) {
+            // console.log(e);
+
+            if (!e.target.matches(".glyphicon-remove")) return;
+
+            // find the index
+            // remove from the bookmarks using splice
+            // fill the list
+            //store back to localStorage
+
+            console.log("hello");
+            const index = e.target.parentNode.dataset.id;
+            bookmarks.splice(index, 1);
+            fillBookmarksList(bookmarks);
+            storeBookmarks(bookmarks);
+
+            //event deligation is very important for javasscript
+            //splice and way to get dataset// (data arrtibutes )
+
+            console.dir(index);
+        }
+
         function storeBookmarks(bookmarks = []) {
             localStorage.setItem("bookmarks", JSON.stringify(bookmarks));
         }
 
         bookmarkForm.addEventListener("submit", createBookmark);
+        bookmarksList.addEventListener("click", removeBookmark);
     </script>
 </body>
 
